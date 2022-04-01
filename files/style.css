@@ -1,0 +1,135 @@
+﻿ @charset "utf-8";
+* {
+	margin: 0;
+	padding: 0;
+	outline: none;
+}
+
+body {
+	width: 100%;
+	height: 100%;
+	color:#333;
+	background: #f7f7f7;
+	font-family: "Segoe UI", "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size:1em;
+	line-height:135%; 
+	background: #eaeae2 url(http://plurrimi.com/img/bg.png);
+}
+
+
+
+
+
+
+
+
+
+
+
+/* -------------------------------
+Выделение текста
+----------------------------------*/
+
+::selection {background: #e29416; color: #fff;}
+::-moz-selection {background: #e29416; color: #fff}
+
+#mSm {
+	text-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+	font-size:32pt
+}
+
+/* -------------------------------
+ Стили для игры
+----------------------------------*/
+table {
+    width: 60%;
+    height: 30%;
+    table-layout: fixed;
+}
+
+th, td {
+    border: 1px solid;
+    padding: 0;
+}
+
+th:after,
+td:after {
+    content: '';
+    display: block;
+    margin-top: 100%;
+}
+
+
+#game{
+	display:flex; 
+	display:-webkit-flex;
+	height:100vh;
+	width:100vw;
+}
+#game > div{padding:10px}
+
+
+
+article #content-wrap p {
+	text-indent: 1.5em; 
+    text-align: justify;
+}
+
+input[type=number]{
+    font-size:1em;
+    width:2.6em;
+    padding:3px;
+    margin-bottom:10px;
+    border:2px solid #ddd;
+    border-radius:5px;
+    text-align:center;
+}
+
+#generate,#crGraf {
+	cursor: pointer;
+	display: inline-block;
+	font-family: arial,sans-serif;
+	font-size: 18px;
+	font-weight: bold;
+	color: rgb(68,68,68);
+	text-decoration: none;
+	user-select: none;
+	padding: .2em 1.2em;
+	border: 1px solid rgba(0,0,0,.1);
+	border-radius: 2px;
+	background: rgb(245,245,245) linear-gradient(#f4f4f4, #f1f1f1);
+	transition: all .218s ease 0s;
+	margin-bottom: 10px;
+}
+#generate,#crGraf:hover {
+	color: rgb(24,24,24);
+	border: 1px solid rgb(198,198,198);
+	background: #f7f7f7 linear-gradient(#f7f7f7, #f1f1f1);
+	box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+#generate,#crGraf:active {
+	color: rgb(51,51,51);
+	border: 1px solid rgb(204,204,204);
+	background: rgb(238,238,238) linear-gradient(rgb(238,238,238), rgb(224,224,224));
+	box-shadow: 0 1px 2px rgba(0,0,0,.1) inset;
+}
+/* -------------------------------
+ Стили агента
+----------------------------------*/
+#agent {
+    background-size: cover;
+    overflow: hidden;
+    background-color: #F50000;
+    text-align: center;
+    position: fixed;
+    left: -100px;
+    top: -100px;
+   
+}
+#agent img{
+	max-width:100%;
+	height:auto;
+	max-width: 100%;
+    background-color: #abc;
+
+}

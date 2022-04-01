@@ -1,0 +1,594 @@
+<!DOCTYPE>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>лабиринт</title>
+<link href="./files/style.css" rel="stylesheet" type="text/css">
+<script src="./files/jquery.min.js"></script>
+<script type="text/javascript"> 
+ // Скрипт для лабиринта
+ $(document).ready(function(){
+
+	var canvas=document.getElementById('canvy');
+	var ctx=canvas.getContext('2d'); //доступ для рисования
+	var Maze, AgentP, Cell;
+	var Graf = [];
+	var timestep = 500;
+	var timerand = 2000;
+	var Track =[];
+	var waybool = true;
+	var chmusor = 0;
+	function X(){ 
+		return parseInt(document.getElementById('xCells').value)
+	}
+	function Y(){
+		return parseInt(document.getElementById('yCells').value)
+	}
+
+	// Инициализация данных
+	function reset(){
+		ctx=canvas.getContext('2d');
+		Track = [{
+			x:0,
+			y:0,
+		}];
+		Maze={
+				pos:[],
+				breaks:[],
+				actualLength:0, 
+				musor:{x:0, y:0, set:0}, 
+				current:new Block(0,0,0)
+			};
+		AgentP={x:0, y:0,set:0}; // Позиция агента на поле (xy), set - параметр указывающий установлен ли агент на поле или нет
+		Cell={x:X(), y:Y()}; // Ячейки поля
+		Graf = [];
+
+		$(".agentimg").attr("src","files/Pylesos.png");
+		Cell.width=canvas.width/Cell.x; // ширина ячейки
+		Cell.height=canvas.height/Cell.y; // высота ячейки
+		
+		actualLength=0;
+	}
+	function Block(x, y, i){
+		this.visited=false;
+		this.isWall=true;
+		this.x=x;
+		this.y=y;
+		this.i=i;
+	}
+    Block.prototype.render=function(){
+        if(!this.isWall){
+            ctx.fillRect(this.x*Cell.width, this.y*Cell.height, Cell.width, Cell.height);
+        }
+    };
+    Block.prototype.visit=function(){
+        this.visited=true;
+    };
+    Block.prototype.demolish=function(){
+        this.isWall=false;
+        this.visit();
+    };
+
+    Block.prototype.useNeighbours=function(){
+        var neighbours=Maze.current.checkNeighbours();
+        if(neighbours.length>0){
+            var whichBlock=neighbours[Math.floor(Math.random()*neighbours.length)];
+            Maze.breaks.push(this);
+            this.demolish();
+            Maze.pos[this.x+whichBlock.x/2][this.y+whichBlock.y/2].demolish();
+            Maze.current=Maze.pos[this.x+whichBlock.x][this.y+whichBlock.y];
+            Maze.current.demolish();
+            if(Maze.breaks.length>Maze.actualLength){
+                Maze.actualLength=Maze.breaks.length;
+                Maze.musor.x=Maze.breaks[Maze.breaks.length-1].x;
+                Maze.musor.y=Maze.breaks[Maze.breaks.length-1].y;
+            }
+        }else if(neighbours.length<=0){
+            var whichBlock=Maze.breaks[Maze.breaks.length-1];
+            Maze.breaks.pop();
+            Maze.current=Maze.pos[whichBlock.x][whichBlock.y];
+        }else{
+            Maze.current=chooseUnvisited();
+        }
+    };
+    Block.prototype.checkNeighbours=function(){
+        var visits=[];
+        if(Maze.pos[this.x+2]) 			if(!Maze.pos[this.x+2][this.y].visited) visits.push({x:2, y:0});
+        if(Maze.pos[this.x-2]) 			if(!Maze.pos[this.x-2][this.y].visited) visits.push({x:-2, y:0});
+        if(Maze.pos[this.x][this.y+2]) 	if(!Maze.pos[this.x][this.y+2].visited) visits.push({x:0, y:+2});
+        if(Maze.pos[this.x][this.y-2])  if(!Maze.pos[this.x][this.y-2].visited) visits.push({x:0, y:-2});
+        return visits;
+    };
+	function createMaze(){
+		ggg = 0;
+		for(var i=0; i<Cell.x; ++i){
+			Maze.pos.push([]);
+			for(var j=0; j<Cell.y; ++j){
+				Maze.pos[i].push(new Block(i, j,ggg));
+				Graf[ggg] = [];
+				ggg++;
+			}
+		}
+		Maze.current=Maze.pos[0][0];
+		Maze.current.demolish();
+		while(checkUnvisited()){
+			Maze.current.useNeighbours();
+		}
+		randomf();
+		render();
+	}
+	function checkMandA(i,j) {
+		if (((Maze.musor.x!=i)&&(Maze.musor.y!=j))&&((AgentP.x!=i)&&(AgentP.y!=j))) {return true} else {return false}
+	}
+	function randomf(){
+		for(var i=0; i<Cell.x-1; i+=3)
+			for(var j=0; j<Cell.y-1; j+=3){
+				if (((Math.floor(Math.random() * (5 - 0 + 1)) + 0)==0)&&checkMandA(i,j)) 
+        			Maze.pos[i][j].isWall=false;
+        		if (((Math.floor(Math.random() * (15 - 0 + 1)) + 0)==15)&&checkMandA(i,j)) 
+        			Maze.pos[i][j].isWall=true;
+			}
+
+    }
+	function checkUnvisited(){
+		var unvisitedCells=false
+		for(var i=0; i<Cell.x; i+=2){
+			for(var j=0; j<Cell.y; j+=2){
+				if(!Maze.pos[i][j].visited){
+					unvisitedCells=true;
+					j=Maze.pos[i].length;
+					i=Maze.pos.length;
+				}
+			}
+		}
+		return unvisitedCells
+	}
+	function chooseUnvisited(){
+		var unvisitedCells=[];
+		for(var i=0; i<Maze.pos.length; i+=2){
+			for(var j=0; j<Maze.pos[i].length; j+=2){
+				if(Maze.pos[i])
+					if(Maze.pos[i][j])
+						if(!Maze.pos[i][j].visited)
+					unvisitedCells.push(Maze.pos[i][j]);
+				
+			}
+		}
+		return unvisitedCells[Math.floor(Math.random()*unvisitedCells.length)]
+	}
+
+	function renderAgentP(x,y){
+		var agentdiv = $("#agent");
+		agentdiv.css("visibility", "visible");
+    	agentdiv.css("left", x*Cell.width+10+"px");
+    	agentdiv.css("top", y*Cell.height+10+"px");
+    	agentdiv.css("width", Cell.width);
+		agentdiv.css("height", Cell.height);
+	}
+	function rendermusor(x,y){
+
+		// Создаем объект изображения
+		var img = new Image();
+		// Привязываем функцию к событию onload
+		// Это указывает браузеру, что делать, когда изображение загружено
+		img.onload = function() {
+		ctx.drawImage(img, x*Cell.width, y*Cell.height,Cell.width, Cell.height);
+		};
+		// Загружаем файл изображения
+		img.src = "files/musor.png";
+	}
+	function render(){
+		ctx.fillStyle = "black";
+		ctx.fillRect(0,0,canvas.width,canvas.height);
+		ctx.fillStyle='white';
+		for(var i=0; i<Maze.pos.length; ++i){
+			for(var j=0; j<Maze.pos[i].length; ++j){
+				Maze.pos[i][j].render();
+			}
+		}
+	}
+
+	
+
+	// Генерация нового поля
+	function generate(){
+		$("#crGraf").css("visibility", "hidden");
+		$("#agent").css("visibility", "hidden");
+		reset();
+		createMaze();
+		render();
+	}
+		
+
+	function renderline() {
+
+	
+		ctx.fillStyle='yellow';
+		ctx.globalAlpha = 0.5;
+		for (var i = 1; i<= Track.length - 2; i++) {
+				xl = Track[i].x;
+				yl = Track[i].y;	
+				ctx.fillRect(xl*Cell.width, yl*Cell.height, Cell.width, Cell.height);
+		};
+		ctx.globalAlpha = 1;
+		//	if (Track[i-1].y>Track[i+1].y)
+		//}
+		/*
+		xl = Math.floor(v/Cell.x);
+		yl = v-(xl)*Cell.x;		
+		ctx.fillStyle='yellow';
+		ctx.fillRect(xl*Cell.width, yl*Cell.height, Cell.width, Cell.height);
+		ctx.globalAlpha = 1;	
+		*/
+	}
+
+	function WhereAgent() {
+		if (AgentP.y<Maze.musor.y) return "Up";
+		else if (AgentP.y>Maze.musor.y) return "Down";
+			else if (AgentP.x>Maze.musor.x) return "Rigth";
+				else return "Left";
+	}
+
+	// Перемещение элемента "Agent" по лабиринту
+	function moveAgentLeft(l){
+	AgentP.x -= 1; 
+	var agentdiv = $("#agent");
+		agentdiv.css("visibility", "visible");
+    	agentdiv.css("left", AgentP.x*Cell.width+10+"px");
+    	agentdiv.css("top", AgentP.y*Cell.height+10+"px");
+    	drawMess("Иду налево");
+	}
+	function moveAgentRight(l){
+	AgentP.x += 1; 
+	var agentdiv = $("#agent");
+		agentdiv.css("visibility", "visible");
+    	agentdiv.css("left", AgentP.x*Cell.width+10+"px");
+    	agentdiv.css("top", AgentP.y*Cell.height+10+"px");
+    	drawMess("Иду направо");
+
+	}
+	function moveAgentDown(l){
+	AgentP.y += 1; 	
+	var agentdiv = $("#agent");
+		agentdiv.css("visibility", "visible");
+    	agentdiv.css("left", AgentP.x*Cell.width+10+"px");
+    	agentdiv.css("top", AgentP.y*Cell.height+10+"px");
+    	drawMess("Иду вниз");
+	}
+	function moveAgentUp(l){
+	AgentP.y -= 1; 	
+	var agentdiv = $("#agent");
+		agentdiv.css("visibility", "visible");
+    	agentdiv.css("left", AgentP.x*Cell.width+10+"px");
+    	agentdiv.css("top", AgentP.y*Cell.height+10+"px");
+    	drawMess("Иду вверх");
+	}
+	function trackReg(v2,v1) {
+		if (v1>=0) {
+		var agentdiv = $("#agent");		
+		var leftX = Math.floor(v2/Cell.x);
+		var topY = v2-(leftX)*Cell.x;
+		xl = Math.floor(v1/Cell.x);
+		yl = v1-(xl)*Cell.x;			
+		Track.push({x:xl,y:yl});
+		if (topY!=yl){
+			if (topY>yl) 
+				return "Up";
+			else
+				return "Down";	
+		};
+		if (leftX!=xl){
+			if (leftX>xl) 
+				return "Left";
+			else
+				return "Right";
+		};
+
+		}
+
+	}
+	function moveAgent(s) {
+  			if (s=="Up") moveAgentUp(Cell.height);
+  			if (s=="Down") moveAgentDown(Cell.height);
+  			if (s=="Left") moveAgentLeft(Cell.width);
+  			if (s=="Right") moveAgentRight(Cell.width);
+	}
+
+function nextstep(v) {
+	tX = Math.floor(v/Cell.x);
+	tY = v-(tX)*Cell.x;
+	if (v!=-1)
+	return Maze.pos[tX][tY].isWall;
+	else return false;
+}
+	function way(fn,path) {
+		waybool = true;
+		v = fn;
+		path[Maze.pos[Maze.musor.x][Maze.musor.y].i]=-999;
+		var timerId = setInterval(function() {
+			s = trackReg(v,path[v]);
+			if ((v==-999)||(v == -1))
+				{
+					s="";
+					waybool = false;
+					clearInterval(timerId);
+					drawMess("Я заблудился");
+					return;
+				}				
+				if ((!(path[v]==-999))&&(!nextstep(path[v])))
+					moveAgent(s);
+				else{
+					s="";
+					waybool = false;
+					clearInterval(timerId);
+					if (nextstep(path[v]))
+					drawMess("Упс, тут стена");
+					return;
+				}
+				renderline();
+  			v = path[v];
+		}, timestep);
+		console.log("way done!");
+	}
+	function way2(fn,path) {
+			waybool = true;
+			path[Maze.pos[Maze.musor.x][Maze.musor.y].i]=-999;
+			writePath(fn);
+			function writePath(v) {
+				s = trackReg(v,path[v]);
+				if ((v==-999)||(v == -1))
+				{
+					{
+						s="";
+						waybool = false;
+						return;
+					}
+					
+				}
+				if (!(path[v]==-999))
+				moveAgent(s);
+				writePath(path[v]);		
+				//renderline(v);
+		
+			}
+		$(".agentimg").attr("src","files/PylesosY.png");
+		console.log("way done!");
+	}
+	//алгоритм Дейкстры
+	function Dijkstra(GR, fn, st){
+		var distance=[], count, index, i, u, m=st,g=0;
+		var visited=[];
+		var path=[];
+		for (var i=0; i<Cell.x*Cell.y; ++i){
+			distance[i]=9999; 
+			visited[i]=false;
+			path[i]=-1;
+		};
+
+		distance[st]=0;
+		for (var count=0; count<Cell.x*Cell.y-1; ++count){
+			min=9999;
+			for (var i=0; i<Cell.x*Cell.y; ++i)
+				if ((!visited[i]) && (distance[i]<=min)){
+					min=distance[i]; index=i;
+				}
+			u=index;
+			visited[u]=true;
+			for (i=0; i<Cell.x*Cell.y; ++i)
+				if ((!visited[i]) && (GR[u][i]!=0) && (distance[u]!=9999) &&
+					(distance[u]+GR[u][i]<distance[i])){
+					distance[i]=distance[u]+GR[u][i];
+					path[i] = u;
+				};
+		}
+		console.log("Dijkstra done!");
+		way(fn,path);
+
+		
+	}
+
+	function drawMess(dr){
+		$('#mSm').html(dr);
+	}
+	function crGraf(){
+		for (var i = 0; i < Graf.length; ++i) 
+			for (var j = 0; j < Graf.length; ++j)
+			Graf[i][j]=0;	
+		g=0;
+		for(var i=0; i<Maze.pos.length; ++i)
+		for(var j=0; j<Maze.pos[i].length; ++j){
+			g=(i)*Maze.pos[i].length+(j);
+			gy=(i)*Maze.pos[i].length+(j+1);
+			gx=(i+1)*Maze.pos[i].length+(j);
+			if (j!=Maze.pos[i].length-1) 
+				if ((!Maze.pos[i][j+1].isWall)&&(!Maze.pos[i][j].isWall)) {Graf[g][gy]=1;Graf[gy][g]=1;}
+				else {Graf[g][gy]=0;Graf[gy][g]=0;};
+			if (i!=Maze.pos.length-1) 
+				if ((!Maze.pos[i+1][j].isWall)&&(!Maze.pos[i][j].isWall)) {Graf[g][gx]=1;Graf[gx][g]=1;}
+				else {Graf[g][gx]=0;Graf[gx][g]=0;};
+			Graf[g][g]=0;
+		};
+		
+	g=0;
+console.log("crGraf done!");
+	Dijkstra(Graf,((AgentP.x)*Maze.pos[AgentP.x].length+(AgentP.y)),((Maze.musor.x)*Maze.pos[Maze.musor.x].length+(Maze.musor.y)));		
+	}
+	function crGraf2(posA){
+		for (var i = 0; i < Graf.length; ++i) 
+			for (var j = 0; j < Graf.length; ++j)
+			Graf[i][j]=0;	
+		g=0;
+		for(var i=0; i<Maze.pos.length; ++i)
+		for(var j=0; j<Maze.pos[i].length; ++j){
+			g=(i)*Maze.pos[i].length+(j);
+			gy=(i)*Maze.pos[i].length+(j+1);
+			gx=(i+1)*Maze.pos[i].length+(j);
+			if (j!=Maze.pos[i].length-1) 
+				if ((!Maze.pos[i][j+1].isWall)&&(!Maze.pos[i][j].isWall)) {Graf[g][gy]=1;Graf[gy][g]=1;}
+				else {Graf[g][gy]=0;Graf[gy][g]=0;};
+			if (i!=Maze.pos.length-1) 
+				if ((!Maze.pos[i+1][j].isWall)&&(!Maze.pos[i][j].isWall)) {Graf[g][gx]=1;Graf[gx][g]=1;}
+				else {Graf[g][gx]=0;Graf[gx][g]=0;};
+			Graf[g][g]=0;
+		};
+		
+	g=0;
+	Dijkstra(Graf,((AgentP.x)*Maze.pos[AgentP.x].length+(AgentP.y)),((Maze.musor.x)*Maze.pos[Maze.musor.x].length+(Maze.musor.y)));		
+	}
+	
+	document.getElementById('generate').addEventListener('click',generate);
+	document.getElementById('crGraf').addEventListener('click',crGraf);
+	var ar=[33,34,35,36,37,38,39,40];
+	$(document).keydown(function(e) {
+	     var key = e.which;
+	      if($.inArray(key,ar) > -1) {
+	          e.preventDefault();
+	          return false;
+	      }
+	      return true;
+	});
+
+	$(".numbertype").change(function(){
+    var value = parseInt($(".numbertype").val(), 10);
+    $(".numbertype").val(value);
+	});
+
+	var MouseCoords = {
+		// X-координата
+		getX: function(e)
+		{
+			if (e.pageX)
+			{
+				return e.pageX;
+			}
+			else if (e.clientX)
+			{
+				return e.clientX+(document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
+			}
+
+			return 0;
+		},
+		// Y-координата
+		getY: function(e)
+		{
+			if (e.pageY)
+			{
+				return e.pageY;
+			}
+			else if (e.clientY)
+			{
+				return e.clientY+(document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
+			}
+
+			return 0;
+		}
+	};
+	
+	$(document).click(function(e){
+		var Xcub = Math.floor((MouseCoords.getX(e)-10)/Cell.width);
+		var Ycub = Math.floor((MouseCoords.getY(e)-10)/Cell.height);
+
+		if ((Xcub>=0)&&(Xcub<=29)&&(Ycub>=0)&&(Ycub<=29))
+    	console.log('X: ='+Xcub+'  Y: ='+Ycub+' №: ='+((Xcub)*Maze.pos[Xcub].length+(Ycub)));
+    	if((!Maze.pos[Xcub][Ycub].isWall)&&(Maze.musor.set == 0)&&(AgentP.set == 1)){
+    		Maze.musor.x = Xcub;
+    		Maze.musor.y = Ycub;
+    		Maze.musor.set = 1;
+    		//рисуем мусор на поле
+    		rendermusor(Maze.musor.x,Maze.musor.y);
+    		// делаем видимой кнопку выполнения алгоритма
+    		$("#crGraf").css("visibility", "visible");
+    	}else
+    	if((!Maze.pos[Xcub][Ycub].isWall)&&(AgentP.set == 0)){
+    		AgentP.x = Xcub;
+    		AgentP.y = Ycub;
+    		AgentP.set = 1;
+    		Track[0] = {x:Xcub,y:Ycub};	
+    		// рисуем агента на поле
+    		renderAgentP(AgentP.x,AgentP.y);
+    		
+
+
+    	};
+    	
+    return true;
+	})
+	
+
+  generate();
+  var rndd = setInterval(function() {
+
+
+  		if (chmusor==1){
+  			chmusor=0;
+  			console.log(WhereAgent());
+  			if ((WhereAgent()=="Up")&&((Maze.pos[Maze.musor.x][Maze.musor.y+1].isWall==false))){
+  				Maze.musor.y++;
+  			}else
+  			if ((WhereAgent()=="Up")&&((Maze.pos[Maze.musor.x][Maze.musor.y+1].isWall))){
+				if ((AgentP.x<Maze.musor.x)&&(Maze.pos[Maze.musor.x+1][Maze.musor.y].isWall==false)){
+					Maze.musor.x++;
+  				}else
+  				if (Maze.musor.x-1==-1)Maze.musor.x++;else
+  				if ((AgentP.x>Maze.musor.x)&&(Maze.pos[Maze.musor.x-1][Maze.musor.y].isWall==false)){
+					Maze.musor.x--;
+  				}
+  			}else
+			if ((WhereAgent()=="Down")&&((Maze.pos[Maze.musor.x][Maze.musor.y-1].isWall==false))){
+				Maze.musor.y--;
+  			}else
+  			if ((WhereAgent()=="Down")&&((Maze.pos[Maze.musor.x][Maze.musor.y-1].isWall))){
+				if ((AgentP.x<Maze.musor.x)&&(Maze.pos[Maze.musor.x+1][Maze.musor.y].isWall==false)){
+					Maze.musor.x++;
+  				}else
+  				if ((Agent.x>Maze.musor.x)&&(Maze.pos[Maze.musor.x-1][Maze.musor.y].isWall==false)){
+					Maze.musor.x--;
+  				}
+  			}else
+  			if ((WhereAgent()=="Left")&&((Maze.pos[Maze.musor.x+1][Maze.musor.y].isWall==false))){
+				Maze.musor.x++;
+  			}else
+  			if ((WhereAgent()=="Right")&&((Maze.pos[Maze.musor.x-1][Maze.musor.y+1].isWall==false))){
+				Maze.musor.x--;
+  			}
+
+  		}else chmusor++;
+		randomf();
+		render();
+		renderline()
+		if (Maze.musor.set==1)
+		rendermusor(Maze.musor.x,Maze.musor.y);
+		if (!waybool){
+			crGraf();
+		};
+		if ((AgentP.x==Maze.musor.x)&&(AgentP.y==Maze.musor.y)) {clearInterval(rndd); drawMess("Попался!!"); return;}
+	}, timerand);
+
+});	
+</script>
+</head>
+<body>
+
+<div id="game">
+	<div width="660" height="660">
+		<canvas id="canvy" width="660" height="660"></canvas>
+		<div id="agent"><img class="agentimg" src="files/Pylesos.png"></div>
+	</div>
+	<div>
+		
+		<p>Задай размер поля</p>
+		<input type="number" class="numbertype" id="xCells"  value="50">Х
+		<input type="number" class="numbertype" id="yCells" value="50">
+		<p>Жми сюда пару раз</p>
+		<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;  &darr;  &darr;  </p>
+		<p><input type="button" id="generate" value="Сгенерировать">
+		<p>Теперь нужно разместить агента</p><p style="color: green"> (первый клик мыши по полю)</p><p> и разместить мусор</p><p style="color: green"> (второй клик по полю)</p>
+		<input type="button" id="crGraf" style="visibility: hidden" value="Выполнить алгоритм Дейкстры">
+		<br>
+		<div id="mSm"></div>
+		</p>
+		<p></div>
+</div>
+
+
+</body>
+</html>
